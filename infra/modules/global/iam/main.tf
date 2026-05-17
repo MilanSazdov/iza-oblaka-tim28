@@ -39,3 +39,45 @@ resource "aws_iam_role_policy" "bronze_write" {
   role   = aws_iam_role.lambda_execution.id
   policy = data.aws_iam_policy_document.bronze_write.json
 }
+
+data "aws_iam_policy_document" "logs" {
+  statement {
+    actions = [
+      "logs:CreateLogStream",
+      "logs:PutLogEvents",
+    ]
+    resources = [
+      "arn:aws:logs:*:*:log-group:/aws/lambda/${local.prefix}-bronze-*:*",
+    ]
+  }
+
+  statement {
+    actions   = ["logs:CreateLogGroup"]
+    resources = ["arn:aws:logs:*:*:log-group:/aws/lambda/${local.prefix}-bronze-*"]
+  }
+}
+
+resource "aws_iam_role_policy" "logs" {
+  name   = "${local.prefix}-bronze-logs"
+  role   = aws_iam_role.lambda_execution.id
+  policy = data.aws_iam_policy_document.logs.json
+}
+
+data "aws_iam_policy_document" "kms" {
+  statement {
+    actions = ["kms:Encrypt", "kms:Decrypt", "kms:ReEncrypt*",
+               "kms:GenerateDataKey*", "kms:DescribeKey"]
+    resources = [var.kms_key_arn]
+  }
+}
+
+resource "aws_iam_role_policy" "kms" {
+  name   = "${local.prefix}-bronze-kms"
+  role   = aws_iam_role.lambda_execution.id
+  policy = data.aws_iam_policy_document.kms.json
+}
+
+resource "aws_iam_role_policy_attachment" "vpc_access" {
+  role       = aws_iam_role.lambda_execution.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+}

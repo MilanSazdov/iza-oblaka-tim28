@@ -9,3 +9,7 @@ variable "environment" {
 variable "bronze_bucket_arn" {
   type = string
 }
+
+variable "kms_key_arn" {
+  type = string
+}
