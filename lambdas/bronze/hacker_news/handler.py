@@ -1,20 +1,24 @@
 import datetime as dt
+import json
 import logging
 import os
+import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Iterable
 
+import boto3
 import requests
 
 
 HN_API = "https://hacker-news.firebaseio.com/v0"
-BRONZE_BUCKET = os.environ.get("BRONZE_BUCKET")
+BRONZE_BUCKET = os.environ["BRONZE_BUCKET"]
 
 ID_LISTS = ("topstories", "newstories", "beststories", "askstories",
             "jobstories", "showstories")
 
 log = logging.getLogger()
 log.setLevel(logging.INFO)
+
+_s3 = boto3.client("s3")
 
 
 def _target_day(event):
@@ -34,8 +38,7 @@ def _candidate_ids(session):
     for name in ID_LISTS:
         r = session.get(f"{HN_API}/{name}.json", timeout=15)
         r.raise_for_status()
-        ids = r.json() or []
-        out.update(ids)
+        out.update(r.json() or [])
     return out
 
 
@@ -56,15 +59,40 @@ def _items_in_window(ids, lo, hi):
     return keep
 
 
+def _s3_key(day, run_id):
+    return (
+        f"source=hacker_news/year={day:%Y}/month={day:%m}/day={day:%d}/"
+        f"items-{run_id}.json"
+    )
+
+
+def _put(items, key):
+    body = "\n".join(json.dumps(i, separators=(",", ":")) for i in items)
+    _s3.put_object(
+        Bucket=BRONZE_BUCKET,
+        Key=key,
+        Body=body.encode("utf-8"),
+        ContentType="application/x-ndjson",
+    )
+
+
 def lambda_handler(event, context):
     day = _target_day(event or {})
     lo, hi = _day_window(day)
-    log.info("hn ingest day=%s window=[%d, %d)", day.isoformat(), lo, hi)
+    run_id = str(uuid.uuid4())[:8]
+    log.info("hn ingest day=%s run=%s", day.isoformat(), run_id)
 
     with requests.Session() as s:
-        candidates = _candidate_ids(s)
+        ids = _candidate_ids(s)
+    items = _items_in_window(ids, lo, hi)
 
-    items = _items_in_window(candidates, lo, hi)
-    log.info("hn items in window: %d", len(items))
+    key = _s3_key(day, run_id)
+    _put(items, key)
+    log.info("wrote %d items to s3://%s/%s", len(items), BRONZE_BUCKET, key)
 
-    return {"items_written": len(items), "s3_key": None, "day": day.isoformat()}
+    return {
+        "items_written": len(items),
+        "s3_key": key,
+        "bucket": BRONZE_BUCKET,
+        "day": day.isoformat(),
+    }
