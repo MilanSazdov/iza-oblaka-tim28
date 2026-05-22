@@ -1,5 +1,9 @@
 locals {
   prefix = "${var.project_name}-${var.environment}"
+  functions = {
+    hacker_news = aws_lambda_function.hacker_news
+    twitter     = aws_lambda_function.twitter
+  }
 }
 
 resource "aws_lambda_function" "hacker_news" {
@@ -56,4 +60,32 @@ resource "aws_lambda_function" "twitter" {
       DATASET_NAME  = var.twitter_dataset_name
     }
   }
+}
+
+resource "aws_cloudwatch_log_group" "bronze" {
+  for_each          = local.functions
+  name              = "/aws/lambda/${each.value.function_name}"
+  retention_in_days = 14
+}
+
+resource "aws_cloudwatch_event_rule" "daily" {
+  for_each            = local.functions
+  name                = "${each.value.function_name}-daily"
+  description         = "Daily bronze ingest for ${each.key}"
+  schedule_expression = "cron(0 2 * * ? *)"
+}
+
+resource "aws_cloudwatch_event_target" "daily" {
+  for_each = local.functions
+  rule     = aws_cloudwatch_event_rule.daily[each.key].name
+  arn      = each.value.arn
+}
+
+resource "aws_lambda_permission" "allow_eventbridge" {
+  for_each      = local.functions
+  statement_id  = "AllowExecutionFromEventBridge"
+  action        = "lambda:InvokeFunction"
+  function_name = each.value.function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.daily[each.key].arn
 }
