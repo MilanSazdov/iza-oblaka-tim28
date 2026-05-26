@@ -22,9 +22,7 @@ resource "aws_lambda_function" "hacker_news" {
     security_group_ids = [var.lambda_sg_id]
   }
 
-  tracing_config {
-    mode = "Active"
-  }
+  tracing_config { mode = "Active" }
 
   environment {
     variables = {
@@ -49,9 +47,7 @@ resource "aws_lambda_function" "twitter" {
     security_group_ids = [var.lambda_sg_id]
   }
 
-  tracing_config {
-    mode = "Active"
-  }
+  tracing_config { mode = "Active" }
 
   environment {
     variables = {
@@ -88,4 +84,38 @@ resource "aws_lambda_permission" "allow_eventbridge" {
   function_name = each.value.function_name
   principal     = "events.amazonaws.com"
   source_arn    = aws_cloudwatch_event_rule.daily[each.key].arn
+}
+
+resource "aws_lambda_function_event_invoke_config" "bronze" {
+  for_each      = local.functions
+  function_name = each.value.function_name
+
+  maximum_retry_attempts = 1
+
+  destination_config {
+    on_failure {
+      destination = var.alerts_sns_topic_arn
+    }
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "errors" {
+  for_each = local.functions
+
+  alarm_name          = "${each.value.function_name}-errors"
+  alarm_description   = "Invocation errors for ${each.value.function_name}"
+  namespace           = "AWS/Lambda"
+  metric_name         = "Errors"
+  statistic           = "Sum"
+  period              = 60
+  evaluation_periods  = 1
+  threshold           = 0
+  comparison_operator = "GreaterThanThreshold"
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    FunctionName = each.value.function_name
+  }
+
+  alarm_actions = [var.alerts_sns_topic_arn]
 }
