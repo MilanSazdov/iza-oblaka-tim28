@@ -1,0 +1,64 @@
+name: Deploy
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package-and-deploy:
+    name: Package Lambdas and apply Terraform
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Package Lambdas
+        run: |
+          set -euxo pipefail
+          mkdir -p infra/build
+          for fn in lambdas/bronze/hacker_news lambdas/bronze/twitter lambdas/notifier/discord; do
+            name=$(basename "$fn")
+            stage="infra/build/${name}_stage"
+            rm -rf "$stage" "infra/build/${name}.zip"
+            mkdir -p "$stage"
+            cp "$fn/handler.py" "$stage/"
+            if [ -s "$fn/requirements.txt" ]; then
+              pip install --no-cache-dir -r "$fn/requirements.txt" -t "$stage/"
+            fi
+            (cd "$stage" && zip -qr "../${name}.zip" .)
+          done
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-central-1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.5
+
+      - name: Terraform Init
+        working-directory: infra
+        run: terraform init -input=false
+
+      - name: Terraform Apply
+        working-directory: infra
+        env:
+          TF_VAR_discord_webhook_url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: terraform apply -input=false -auto-approve
