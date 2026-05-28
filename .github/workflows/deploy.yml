@@ -3,14 +3,20 @@ name: Deploy
 on:
   push:
     branches: ["main"]
+  pull_request:
+    branches: ["main"]
   workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: terraform-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   package-and-deploy:
-    name: Package Lambdas and apply Terraform
+    name: Package Lambdas and run Terraform
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -53,12 +59,27 @@ jobs:
         with:
           terraform_version: 1.9.5
 
+      - name: Terraform Format Check
+        working-directory: infra
+        run: terraform fmt -check -recursive
+
       - name: Terraform Init
         working-directory: infra
         run: terraform init -input=false
 
-      - name: Terraform Apply
+      - name: Terraform Validate
+        working-directory: infra
+        run: terraform validate
+
+      - name: Terraform Plan
         working-directory: infra
         env:
           TF_VAR_discord_webhook_url: ${{ secrets.DISCORD_WEBHOOK_URL }}
-        run: terraform apply -input=false -auto-approve
+        run: terraform plan -input=false -out=tfplan
+
+      - name: Terraform Apply
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        working-directory: infra
+        env:
+          TF_VAR_discord_webhook_url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: terraform apply -input=false -auto-approve tfplan
