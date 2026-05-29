@@ -1,0 +1,8 @@
+# CI/CD pipeline using the Machine User keys
+#
+# What goes here:
+# - Trigger on push to main / PR events
+# - Configure AWS credentials from GitHub Secrets (Machine User AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY)
+# - Setup Terraform CLI
+# - Steps: terraform init -> fmt -check -> validate -> plan (on PR) -> apply (on main)
+# - Package and deploy lambda source code from lambdas/bronze/* (zip + upload, or rely on terraform aws_lambda_function source_code_hash)

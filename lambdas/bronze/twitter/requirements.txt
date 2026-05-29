@@ -1,0 +1,4 @@
+# Dependencies for the Twitter bronze lambda
+# requests
+# boto3
+# tweepy   # or any preferred X/Twitter client

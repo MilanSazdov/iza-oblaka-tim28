@@ -1,0 +1,3 @@
+# Dependencies for the Hacker News bronze lambda
+# requests
+# boto3
