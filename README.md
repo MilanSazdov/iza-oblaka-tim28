@@ -46,6 +46,7 @@ terraform apply
   "Version": "2012-10-17",
   "Statement": [
     {
+      "Sid": "ProjectS3",
       "Effect": "Allow",
       "Action": ["s3:*"],
       "Resource": [
@@ -54,28 +55,51 @@ terraform apply
       ]
     },
     {
+      "Sid": "ProjectIAM",
       "Effect": "Allow",
       "Action": [
         "iam:GetRole", "iam:CreateRole", "iam:DeleteRole",
         "iam:AttachRolePolicy", "iam:DetachRolePolicy",
         "iam:PutRolePolicy", "iam:GetRolePolicy", "iam:DeleteRolePolicy",
-        "iam:PassRole", "iam:TagRole",
-        "iam:ListAttachedRolePolicies", "iam:ListRolePolicies"
+        "iam:PassRole", "iam:TagRole", "iam:UntagRole",
+        "iam:ListAttachedRolePolicies", "iam:ListRolePolicies",
+        "iam:ListInstanceProfilesForRole", "iam:ListRoleTags"
       ],
       "Resource": "arn:aws:iam::*:role/iza-oblaka-tim28-*"
     },
     {
+      "Sid": "ServicesUnrestrictedByName",
       "Effect": "Allow",
       "Action": [
-        "lambda:*", "logs:*", "events:*", "sns:*",
-        "ec2:Describe*", "ec2:CreateVpc", "ec2:CreateSubnet",
-        "ec2:CreateInternetGateway", "ec2:CreateNatGateway",
-        "ec2:CreateRouteTable", "ec2:CreateRoute", "ec2:CreateVpcEndpoint",
-        "ec2:CreateSecurityGroup", "ec2:AuthorizeSecurityGroupEgress",
-        "ec2:AllocateAddress", "ec2:AssociateRouteTable",
-        "ec2:Delete*", "ec2:Detach*", "ec2:Modify*",
-        "ec2:CreateTags", "ec2:RevokeSecurityGroup*",
-        "dynamodb:*", "kms:*"
+        "lambda:*",
+        "logs:*",
+        "events:*",
+        "sns:*",
+        "dynamodb:*",
+        "kms:*",
+        "cloudwatch:*"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "EC2VPC",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:Describe*",
+        "ec2:CreateVpc", "ec2:DeleteVpc", "ec2:ModifyVpcAttribute",
+        "ec2:CreateSubnet", "ec2:DeleteSubnet", "ec2:ModifySubnetAttribute",
+        "ec2:CreateInternetGateway", "ec2:DeleteInternetGateway",
+        "ec2:AttachInternetGateway", "ec2:DetachInternetGateway",
+        "ec2:CreateNatGateway", "ec2:DeleteNatGateway",
+        "ec2:AllocateAddress", "ec2:ReleaseAddress",
+        "ec2:CreateRouteTable", "ec2:DeleteRouteTable",
+        "ec2:CreateRoute", "ec2:DeleteRoute",
+        "ec2:AssociateRouteTable", "ec2:DisassociateRouteTable",
+        "ec2:CreateVpcEndpoint", "ec2:DeleteVpcEndpoints", "ec2:ModifyVpcEndpoint",
+        "ec2:CreateSecurityGroup", "ec2:DeleteSecurityGroup",
+        "ec2:AuthorizeSecurityGroupIngress", "ec2:AuthorizeSecurityGroupEgress",
+        "ec2:RevokeSecurityGroupIngress", "ec2:RevokeSecurityGroupEgress",
+        "ec2:CreateTags", "ec2:DeleteTags"
       ],
       "Resource": "*"
     }
@@ -96,14 +120,6 @@ aws lambda invoke --function-name iza-oblaka-tim28-dev-bronze-hacker-news \
 aws s3 ls s3://iza-oblaka-tim28-dev-bronze/source=hacker_news/ --recursive
 aws s3 ls s3://iza-oblaka-tim28-dev-bronze/source=twitter/    --recursive
 ```
-
-## Tim
-
-| Slice | Član           | Oblast                                                       |
-|-------|----------------|--------------------------------------------------------------|
-| S1    | Milan Sazdov   | Python kod (HN, Twitter, Discord notifier) i testovi         |
-| S2    | Vedran Bajic   | Lambda IAM, lambdas terraform modul, notifications modul     |
-| S3    | Lazar Sazdov   | VPC, S3 hardening, KMS, CI/CD, remote state, README          |
 
 ## Poznata ograničenja
 
