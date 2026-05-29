@@ -13,3 +13,7 @@ variable "bronze_bucket_arn" {
 variable "kms_key_arn" {
   type = string
 }
+
+variable "alerts_sns_topic_arn" {
+  type = string
+}

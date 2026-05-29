@@ -31,8 +31,9 @@ module "global_iam" {
   project_name = var.project_name
   environment  = var.environment
 
-  bronze_bucket_arn = module.global_s3.bronze_bucket_arn
-  kms_key_arn       = module.global_s3.kms_key_arn
+  bronze_bucket_arn    = module.global_s3.bronze_bucket_arn
+  kms_key_arn          = module.global_s3.kms_key_arn
+  alerts_sns_topic_arn = module.notifications.sns_topic_arn
 }
 
 module "eu_vpc" {

@@ -81,3 +81,16 @@ resource "aws_iam_role_policy_attachment" "vpc_access" {
   role       = aws_iam_role.lambda_execution.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
 }
+
+data "aws_iam_policy_document" "sns_publish" {
+  statement {
+    actions   = ["sns:Publish"]
+    resources = [var.alerts_sns_topic_arn]
+  }
+}
+
+resource "aws_iam_role_policy" "sns_publish" {
+  name   = "${local.prefix}-bronze-sns-publish"
+  role   = aws_iam_role.lambda_execution.id
+  policy = data.aws_iam_policy_document.sns_publish.json
+}
