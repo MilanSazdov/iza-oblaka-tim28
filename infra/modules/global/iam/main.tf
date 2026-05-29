@@ -66,7 +66,7 @@ resource "aws_iam_role_policy" "logs" {
 data "aws_iam_policy_document" "kms" {
   statement {
     actions = ["kms:Encrypt", "kms:Decrypt", "kms:ReEncrypt*",
-               "kms:GenerateDataKey*", "kms:DescribeKey"]
+    "kms:GenerateDataKey*", "kms:DescribeKey"]
     resources = [var.kms_key_arn]
   }
 }
