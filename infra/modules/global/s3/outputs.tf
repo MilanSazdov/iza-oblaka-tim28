@@ -7,3 +7,13 @@
 # - output "silver_bucket_name" { value = aws_s3_bucket.silver.id }
 # - output "gold_bucket_arn"    { value = aws_s3_bucket.gold.arn }
 # - output "gold_bucket_name"   { value = aws_s3_bucket.gold.id }
+
+output "bronze_bucket_name" {
+  description = "Bronze bucket name"
+  value       = aws_s3_bucket.bronze.bucket
+}
+
+output "bronze_bucket_arn" {
+  description = "Bronze bucket ARN"
+  value       = aws_s3_bucket.bronze.arn
+}
