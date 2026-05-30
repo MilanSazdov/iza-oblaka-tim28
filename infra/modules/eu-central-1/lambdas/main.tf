@@ -4,6 +4,9 @@ locals {
     hacker_news = aws_lambda_function.hacker_news
     twitter     = aws_lambda_function.twitter
   }
+  scheduled_functions = {
+    hacker_news = aws_lambda_function.hacker_news
+  }
 }
 
 resource "aws_lambda_function" "hacker_news" {
@@ -65,20 +68,20 @@ resource "aws_cloudwatch_log_group" "bronze" {
 }
 
 resource "aws_cloudwatch_event_rule" "daily" {
-  for_each            = local.functions
+  for_each            = local.scheduled_functions
   name                = "${each.value.function_name}-daily"
   description         = "Daily bronze ingest for ${each.key}"
   schedule_expression = "cron(0 2 * * ? *)"
 }
 
 resource "aws_cloudwatch_event_target" "daily" {
-  for_each = local.functions
+  for_each = local.scheduled_functions
   rule     = aws_cloudwatch_event_rule.daily[each.key].name
   arn      = each.value.arn
 }
 
 resource "aws_lambda_permission" "allow_eventbridge" {
-  for_each      = local.functions
+  for_each      = local.scheduled_functions
   statement_id  = "AllowExecutionFromEventBridge"
   action        = "lambda:InvokeFunction"
   function_name = each.value.function_name
