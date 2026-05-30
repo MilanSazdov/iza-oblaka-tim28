@@ -13,8 +13,9 @@ data "aws_iam_policy_document" "lambda_assume" {
 }
 
 resource "aws_iam_role" "lambda_execution" {
-  name               = "${local.prefix}-bronze-lambda"
-  assume_role_policy = data.aws_iam_policy_document.lambda_assume.json
+  name                 = "${local.prefix}-bronze-lambda"
+  assume_role_policy   = data.aws_iam_policy_document.lambda_assume.json
+  permissions_boundary = var.permissions_boundary_arn
 }
 
 data "aws_iam_policy_document" "bronze_write" {

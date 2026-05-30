@@ -42,3 +42,8 @@ variable "discord_webhook_url" {
   type      = string
   sensitive = true
 }
+
+variable "lambda_role_permissions_boundary_arn" {
+  type    = string
+  default = "arn:aws:iam::278371787079:policy/boundary-git-actions"
+}

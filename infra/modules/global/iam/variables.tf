@@ -17,3 +17,8 @@ variable "kms_key_arn" {
 variable "alerts_sns_topic_arn" {
   type = string
 }
+
+variable "permissions_boundary_arn" {
+  type    = string
+  default = null
+}
