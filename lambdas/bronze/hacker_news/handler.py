@@ -3,17 +3,17 @@ import json
 import logging
 import os
 import uuid
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import boto3
 import requests
 
 
-HN_API = "https://hacker-news.firebaseio.com/v0"
+ALGOLIA_API = "https://hn.algolia.com/api/v1/search_by_date"
 BRONZE_BUCKET = os.environ["BRONZE_BUCKET"]
 
-ID_LISTS = ("topstories", "newstories", "beststories", "askstories",
-            "jobstories", "showstories")
+TAGS = "(story,comment,poll,pollopt,job)"
+HITS_PER_PAGE = 1000
+SLICE_SECONDS = 1800
 
 log = logging.getLogger()
 log.setLevel(logging.INFO)
@@ -33,30 +33,39 @@ def _day_window(day):
     return int(start.timestamp()), int(end.timestamp())
 
 
-def _candidate_ids(session):
-    out = set()
-    for name in ID_LISTS:
-        r = session.get(f"{HN_API}/{name}.json", timeout=15)
+def _fetch_slice(session, lo, hi):
+    items = []
+    page = 0
+    while True:
+        params = {
+            "tags": TAGS,
+            "numericFilters": f"created_at_i>={lo},created_at_i<{hi}",
+            "hitsPerPage": HITS_PER_PAGE,
+            "page": page,
+        }
+        r = session.get(ALGOLIA_API, params=params, timeout=30)
         r.raise_for_status()
-        out.update(r.json() or [])
+        body = r.json()
+        hits = body.get("hits", [])
+        items.extend(hits)
+        nb_pages = body.get("nbPages", 0)
+        if page + 1 >= nb_pages or not hits:
+            if len(items) >= HITS_PER_PAGE * max(nb_pages, 1):
+                log.warning("slice %s-%s hit pagination ceiling (%d)",
+                            lo, hi, len(items))
+            return items
+        page += 1
+
+
+def _collect_items(lo, hi):
+    out = []
+    with requests.Session() as s:
+        cur = lo
+        while cur < hi:
+            nxt = min(cur + SLICE_SECONDS, hi)
+            out.extend(_fetch_slice(s, cur, nxt))
+            cur = nxt
     return out
-
-
-def _fetch_item(session, item_id):
-    r = session.get(f"{HN_API}/item/{item_id}.json", timeout=15)
-    r.raise_for_status()
-    return r.json()
-
-
-def _items_in_window(ids, lo, hi):
-    keep = []
-    with requests.Session() as s, ThreadPoolExecutor(max_workers=16) as pool:
-        futures = {pool.submit(_fetch_item, s, i): i for i in ids}
-        for f in as_completed(futures):
-            item = f.result()
-            if item and "time" in item and lo <= item["time"] < hi:
-                keep.append(item)
-    return keep
 
 
 def _s3_key(day, run_id):
@@ -82,9 +91,7 @@ def lambda_handler(event, context):
     run_id = str(uuid.uuid4())[:8]
     log.info("hn ingest day=%s run=%s", day.isoformat(), run_id)
 
-    with requests.Session() as s:
-        ids = _candidate_ids(s)
-    items = _items_in_window(ids, lo, hi)
+    items = _collect_items(lo, hi)
 
     key = _s3_key(day, run_id)
     _put(items, key)
