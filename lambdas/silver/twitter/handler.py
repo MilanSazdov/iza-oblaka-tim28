@@ -70,11 +70,16 @@ def normalize(raw):
     return posts, users
 
 
+# only the columns the silver schema needs (keeps the large CSV out of memory)
+_USECOLS = {"user_name", "user_followers", "user_verified", "date", "text", "is_retweet"}
+
+
 def _read_csvs(wr):
     return wr.s3.read_csv(
         path=f"s3://{BRONZE_BUCKET}/source=twitter/",
         path_suffix=".csv",
         dataset=False,
+        usecols=lambda c: c in _USECOLS,
     )
 
 
