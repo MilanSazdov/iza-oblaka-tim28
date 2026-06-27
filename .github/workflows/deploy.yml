@@ -35,13 +35,27 @@ jobs:
         run: |
           set -euxo pipefail
           mkdir -p infra/build
-          for fn in lambdas/bronze/hacker_news lambdas/bronze/twitter lambdas/notifier/discord; do
-            name=$(basename "$fn")
+          # "<source dir>:<zip name>" (zip names must be unique across layers)
+          functions="
+            lambdas/bronze/hacker_news:hacker_news
+            lambdas/bronze/twitter:twitter
+            lambdas/notifier/discord:discord
+            lambdas/silver/hacker_news:silver_hacker_news
+            lambdas/silver/twitter:silver_twitter
+            lambdas/gold/metrics:gold_metrics
+          "
+          for entry in $functions; do
+            fn="${entry%%:*}"
+            name="${entry##*:}"
             stage="infra/build/${name}_stage"
             rm -rf "$stage" "infra/build/${name}.zip"
             mkdir -p "$stage"
-            cp "$fn/handler.py" "$stage/"
-            if [ -s "$fn/requirements.txt" ]; then
+            cp "$fn"/*.py "$stage/"
+            # include shared helpers (e.g. lambdas/silver/common.py) when present
+            if [ -f "$(dirname "$fn")/common.py" ]; then
+              cp "$(dirname "$fn")/common.py" "$stage/"
+            fi
+            if grep -qvE '^\s*(#.*)?$' "$fn/requirements.txt" 2>/dev/null; then
               pip install --no-cache-dir -r "$fn/requirements.txt" -t "$stage/"
             fi
             (cd "$stage" && zip -qr "../${name}.zip" .)

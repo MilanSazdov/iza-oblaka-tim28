@@ -32,6 +32,8 @@ module "global_iam" {
   environment  = var.environment
 
   bronze_bucket_arn        = module.global_s3.bronze_bucket_arn
+  silver_bucket_arn        = module.global_s3.silver_bucket_arn
+  gold_bucket_arn          = module.global_s3.gold_bucket_arn
   kms_key_arn              = module.global_s3.kms_key_arn
   alerts_sns_topic_arn     = module.notifications.sns_topic_arn
   permissions_boundary_arn = var.lambda_role_permissions_boundary_arn
@@ -72,4 +74,29 @@ module "eu_lambdas" {
   twitter_dataset_name = var.twitter_dataset_name
 
   alerts_sns_topic_arn = module.notifications.sns_topic_arn
+}
+
+module "eu_processing" {
+  source       = "./modules/eu-central-1/processing"
+  project_name = var.project_name
+  environment  = var.environment
+
+  silver_lambda_role_arn = module.global_iam.silver_lambda_role_arn
+  gold_lambda_role_arn   = module.global_iam.gold_lambda_role_arn
+  sfn_role_arn           = module.global_iam.sfn_role_arn
+  events_role_arn        = module.global_iam.events_role_arn
+
+  bronze_bucket_name = module.global_s3.bronze_bucket_name
+  silver_bucket_name = module.global_s3.silver_bucket_name
+  gold_bucket_name   = module.global_s3.gold_bucket_name
+
+  private_subnet_ids = module.eu_vpc.private_subnet_ids
+  lambda_sg_id       = module.eu_vpc.lambda_sg_id
+
+  alerts_sns_topic_arn  = module.notifications.sns_topic_arn
+  awswrangler_layer_arn = var.awswrangler_layer_arn
+
+  silver_hacker_news_zip_path = var.silver_hacker_news_zip_path
+  silver_twitter_zip_path     = var.silver_twitter_zip_path
+  gold_metrics_zip_path       = var.gold_metrics_zip_path
 }
