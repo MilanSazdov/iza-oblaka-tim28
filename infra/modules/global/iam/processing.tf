@@ -212,7 +212,7 @@ resource "aws_iam_role" "events" {
 data "aws_iam_policy_document" "events" {
   statement {
     actions   = ["states:StartExecution"]
-    resources = [local.sfn_arn]
+    resources = ["arn:aws:states:${local.region}:${local.account_id}:stateMachine:${local.prefix}-*"]
   }
 }
 
