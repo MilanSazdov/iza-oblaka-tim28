@@ -9,3 +9,19 @@ output "lambda_execution_role_name" {
 output "notifier_role_arn" {
   value = null
 }
+
+output "silver_lambda_role_arn" {
+  value = aws_iam_role.silver_lambda.arn
+}
+
+output "gold_lambda_role_arn" {
+  value = aws_iam_role.gold_lambda.arn
+}
+
+output "sfn_role_arn" {
+  value = aws_iam_role.sfn.arn
+}
+
+output "events_role_arn" {
+  value = aws_iam_role.events.arn
+}
