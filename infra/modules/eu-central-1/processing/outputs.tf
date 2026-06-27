@@ -1,5 +1,9 @@
-output "state_machine_arn" {
+output "hn_state_machine_arn" {
   value = aws_sfn_state_machine.silver_gold.arn
+}
+
+output "twitter_state_machine_arn" {
+  value = aws_sfn_state_machine.twitter.arn
 }
 
 output "silver_hacker_news_function_name" {
@@ -10,6 +14,10 @@ output "silver_twitter_function_name" {
   value = aws_lambda_function.silver_twitter.function_name
 }
 
-output "gold_metrics_function_name" {
-  value = aws_lambda_function.gold_metrics.function_name
+output "gold_hn_function_name" {
+  value = aws_lambda_function.gold_hn.function_name
+}
+
+output "gold_twitter_function_name" {
+  value = aws_lambda_function.gold_twitter.function_name
 }

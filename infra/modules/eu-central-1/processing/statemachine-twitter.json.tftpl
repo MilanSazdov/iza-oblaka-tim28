@@ -1,15 +1,15 @@
 {
-  "Comment": "Normalize HN (silver) then transform (gold). Twitter silver runs on S3 upload, not here.",
-  "StartAt": "SilverHackerNews",
+  "Comment": "Normalize the whole X dataset (silver) then recompute X gold metrics.",
+  "StartAt": "SilverTwitter",
   "States": {
-    "SilverHackerNews": {
+    "SilverTwitter": {
       "Type": "Task",
       "Resource": "arn:aws:states:::lambda:invoke",
       "Parameters": {
-        "FunctionName": "${silver_hn_arn}",
+        "FunctionName": "${silver_x_arn}",
         "Payload.$": "$"
       },
-      "ResultPath": "$.silver_hn",
+      "ResultPath": "$.silver",
       "Retry": [
         {
           "ErrorEquals": ["Lambda.ServiceException", "Lambda.TooManyRequestsException", "Lambda.SdkClientException"],
@@ -25,13 +25,13 @@
           "Next": "NotifyFailure"
         }
       ],
-      "Next": "Gold"
+      "Next": "GoldTwitter"
     },
-    "Gold": {
+    "GoldTwitter": {
       "Type": "Task",
       "Resource": "arn:aws:states:::lambda:invoke",
       "Parameters": {
-        "FunctionName": "${gold_hn_arn}",
+        "FunctionName": "${gold_x_arn}",
         "Payload.$": "$"
       },
       "Retry": [
@@ -56,7 +56,7 @@
       "Resource": "arn:aws:states:::sns:publish",
       "Parameters": {
         "TopicArn": "${alerts_topic_arn}",
-        "Subject": "silver-gold pipeline failed",
+        "Subject": "twitter pipeline failed",
         "Message.$": "States.JsonToString($.error)"
       },
       "Next": "Fail"
@@ -64,7 +64,7 @@
     "Fail": {
       "Type": "Fail",
       "Error": "PipelineFailed",
-      "Cause": "Silver HN or gold step failed; see error detail in the SNS notification."
+      "Cause": "Silver twitter or gold twitter step failed; see error detail in the SNS notification."
     }
   }
 }

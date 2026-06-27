@@ -58,7 +58,11 @@ variable "silver_twitter_zip_path" {
   type = string
 }
 
-variable "gold_metrics_zip_path" {
+variable "gold_hn_zip_path" {
+  type = string
+}
+
+variable "gold_twitter_zip_path" {
   type = string
 }
 
