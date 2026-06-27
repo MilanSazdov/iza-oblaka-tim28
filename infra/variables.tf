@@ -38,9 +38,14 @@ variable "silver_twitter_zip_path" {
   default = "build/silver_twitter.zip"
 }
 
-variable "gold_metrics_zip_path" {
+variable "gold_hn_zip_path" {
   type    = string
-  default = "build/gold_metrics.zip"
+  default = "build/gold_hn.zip"
+}
+
+variable "gold_twitter_zip_path" {
+  type    = string
+  default = "build/gold_twitter.zip"
 }
 
 # AWS-managed "AWS SDK for pandas" (awswrangler) layer for python3.11 in

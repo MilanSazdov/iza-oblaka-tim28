@@ -42,7 +42,8 @@ jobs:
             lambdas/notifier/discord:discord
             lambdas/silver/hacker_news:silver_hacker_news
             lambdas/silver/twitter:silver_twitter
-            lambdas/gold/metrics:gold_metrics
+            lambdas/gold/hn:gold_hn
+            lambdas/gold/twitter:gold_twitter
           "
           for entry in $functions; do
             fn="${entry%%:*}"
@@ -51,10 +52,9 @@ jobs:
             rm -rf "$stage" "infra/build/${name}.zip"
             mkdir -p "$stage"
             cp "$fn"/*.py "$stage/"
-            # include shared helpers (e.g. lambdas/silver/common.py) when present
-            if [ -f "$(dirname "$fn")/common.py" ]; then
-              cp "$(dirname "$fn")/common.py" "$stage/"
-            fi
+            # include any shared layer module (e.g. lambdas/silver/common.py,
+            # lambdas/gold/goldlib.py) sitting next to the function dir
+            cp "$(dirname "$fn")"/*.py "$stage/" 2>/dev/null || true
             if grep -qvE '^\s*(#.*)?$' "$fn/requirements.txt" 2>/dev/null; then
               pip install --no-cache-dir -r "$fn/requirements.txt" -t "$stage/"
             fi

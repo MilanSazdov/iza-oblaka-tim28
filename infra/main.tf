@@ -103,5 +103,6 @@ module "eu_processing" {
 
   silver_hacker_news_zip_path = var.silver_hacker_news_zip_path
   silver_twitter_zip_path     = var.silver_twitter_zip_path
-  gold_metrics_zip_path       = var.gold_metrics_zip_path
+  gold_hn_zip_path            = var.gold_hn_zip_path
+  gold_twitter_zip_path       = var.gold_twitter_zip_path
 }
