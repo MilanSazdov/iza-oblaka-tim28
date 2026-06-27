@@ -44,7 +44,7 @@ resource "aws_lambda_function" "silver_twitter" {
   handler       = "handler.lambda_handler"
   timeout       = 600
   # large static CSV loaded into pandas; more memory also gives more CPU
-  memory_size = 4096
+  memory_size = 3008
   layers      = [var.awswrangler_layer_arn]
 
   # serialize runs so two CSV uploads can't race on the same X partitions
@@ -104,7 +104,7 @@ resource "aws_lambda_function" "gold_twitter" {
   handler       = "handler.lambda_handler"
   timeout       = 600
   # reads the whole X dataset to recompute per-date metrics
-  memory_size = 4096
+  memory_size = 3008
   layers      = [var.awswrangler_layer_arn]
 
   # serialize so two uploads can't race on the same X gold partitions
