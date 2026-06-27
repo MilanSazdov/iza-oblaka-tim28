@@ -47,9 +47,6 @@ resource "aws_lambda_function" "silver_twitter" {
   memory_size = 3008
   layers      = [var.awswrangler_layer_arn]
 
-  # serialize runs so two CSV uploads can't race on the same X partitions
-  reserved_concurrent_executions = 1
-
   filename         = var.silver_twitter_zip_path
   source_code_hash = filebase64sha256(var.silver_twitter_zip_path)
 
@@ -106,9 +103,6 @@ resource "aws_lambda_function" "gold_twitter" {
   # reads the whole X dataset to recompute per-date metrics
   memory_size = 3008
   layers      = [var.awswrangler_layer_arn]
-
-  # serialize so two uploads can't race on the same X gold partitions
-  reserved_concurrent_executions = 1
 
   filename         = var.gold_twitter_zip_path
   source_code_hash = filebase64sha256(var.gold_twitter_zip_path)
