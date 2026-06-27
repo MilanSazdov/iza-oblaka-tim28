@@ -28,6 +28,29 @@ variable "discord_notifier_zip_path" {
   default = "build/discord.zip"
 }
 
+variable "silver_hacker_news_zip_path" {
+  type    = string
+  default = "build/silver_hacker_news.zip"
+}
+
+variable "silver_twitter_zip_path" {
+  type    = string
+  default = "build/silver_twitter.zip"
+}
+
+variable "gold_metrics_zip_path" {
+  type    = string
+  default = "build/gold_metrics.zip"
+}
+
+# AWS-managed "AWS SDK for pandas" (awswrangler) layer for python3.11 in
+# eu-central-1. Confirm the latest version number for your account/region:
+# https://aws-sdk-pandas.readthedocs.io/en/stable/layers.html
+variable "awswrangler_layer_arn" {
+  type    = string
+  default = "arn:aws:lambda:eu-central-1:336392948345:layer:AWSSDKPandas-Python311:22"
+}
+
 variable "twitter_dataset_url" {
   type    = string
   default = "https://raw.githubusercontent.com/datasets/bitcoin-tweets-sample/main/tweets.csv"
