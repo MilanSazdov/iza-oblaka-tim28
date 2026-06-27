@@ -81,6 +81,11 @@ module "eu_processing" {
   project_name = var.project_name
   environment  = var.environment
 
+  # Wait for the IAM roles AND their managed-policy attachments (VPC access)
+  # to exist before creating VPC-attached lambdas, avoiding the
+  # CreateNetworkInterface permission race on a fresh apply.
+  depends_on = [module.global_iam]
+
   silver_lambda_role_arn = module.global_iam.silver_lambda_role_arn
   gold_lambda_role_arn   = module.global_iam.gold_lambda_role_arn
   sfn_role_arn           = module.global_iam.sfn_role_arn
