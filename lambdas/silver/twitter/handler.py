@@ -1,7 +1,10 @@
-"""Silver normalization for X: all bronze twitter CSVs -> posts/users parquet."""
+"""Silver normalization for X: process one bronze twitter CSV (the just-uploaded
+one, or the most recent) into posts/users parquet. Processing a single file per
+run keeps a large multi-file dataset out of memory."""
 import logging
 import os
 
+import boto3
 import pandas as pd
 
 import common
@@ -11,6 +14,8 @@ SILVER_BUCKET = os.environ["SILVER_BUCKET"]
 
 log = logging.getLogger()
 log.setLevel(logging.INFO)
+
+_s3 = boto3.client("s3")
 
 
 def normalize(raw):
@@ -70,10 +75,26 @@ def normalize(raw):
 _USECOLS = {"user_name", "user_followers", "date", "text", "is_retweet"}
 
 
-def _read_csvs(wr):
+def _target_key(event):
+    """The CSV to process: the just-uploaded one (S3 EventBridge event) if
+    present, otherwise the most recently modified CSV under source=twitter/."""
+    key = (((event or {}).get("detail") or {}).get("object") or {}).get("key")
+    if key:
+        return key
+    latest = None
+    paginator = _s3.get_paginator("list_objects_v2")
+    for page in paginator.paginate(Bucket=BRONZE_BUCKET, Prefix="source=twitter/"):
+        for obj in page.get("Contents", []):
+            if obj["Key"].endswith(".csv") and (
+                latest is None or obj["LastModified"] > latest["LastModified"]
+            ):
+                latest = obj
+    return latest["Key"] if latest else None
+
+
+def _read_csv(wr, key):
     return wr.s3.read_csv(
-        path=f"s3://{BRONZE_BUCKET}/source=twitter/",
-        path_suffix=".csv",
+        path=f"s3://{BRONZE_BUCKET}/{key}",
         dataset=False,
         usecols=lambda c: c in _USECOLS,
     )
@@ -90,7 +111,7 @@ def _write_posts(wr, posts):
         path=f"s3://{SILVER_BUCKET}/posts/",
         dataset=True,
         partition_cols=["platform", "year", "month", "day"],
-        mode="overwrite_partitions",
+        mode="append",  # files accumulate; gold dedups by id
         index=False,
     )
     return len(posts)
@@ -132,12 +153,15 @@ def _write_users(wr, users):
 def lambda_handler(event, context):
     import awswrangler as wr
 
-    raw = _read_csvs(wr)
-    log.info("silver x read %d raw rows", len(raw))
+    key = _target_key(event or {})
+    if not key:
+        log.info("silver x: no twitter CSV found")
+        return {"platform": common.PLATFORM_X, "file": None, "posts": 0, "users": 0}
 
-    posts, users = normalize(raw)
+    log.info("silver x reading %s", key)
+    posts, users = normalize(_read_csv(wr, key))
     n_posts = _write_posts(wr, posts)
     n_users = _write_users(wr, users)
 
-    log.info("silver x posts=%d users=%d", n_posts, n_users)
-    return {"platform": common.PLATFORM_X, "posts": n_posts, "users": n_users}
+    log.info("silver x file=%s posts=%d users=%d", key, n_posts, n_users)
+    return {"platform": common.PLATFORM_X, "file": key, "posts": n_posts, "users": n_users}

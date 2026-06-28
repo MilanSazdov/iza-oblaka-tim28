@@ -25,7 +25,13 @@ def lambda_handler(event, context):
     sp = f"s3://{SILVER_BUCKET}"
     log.info("gold x batch")
 
-    posts = g.read(wr, f"{sp}/posts/platform={g.PLATFORM_X}/", dataset=True)
+    # only the columns the X metrics need, so a large accumulated dataset fits
+    posts = g.read(
+        wr, f"{sp}/posts/platform={g.PLATFORM_X}/", dataset=True,
+        columns=["id", "author_username", "datetime"],
+    )
+    if not posts.empty:
+        posts = posts.drop_duplicates(subset="id")
     users = g.read(wr, f"{sp}/users/platform={g.PLATFORM_X}/")
 
     # snapshot date for the followers ranking + DQ = latest tweet date present

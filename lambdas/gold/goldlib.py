@@ -10,9 +10,9 @@ PLATFORM_X = "X"
 TOP_N = 10
 
 
-def read(wr, path, dataset=False):
+def read(wr, path, dataset=False, columns=None):
     try:
-        return wr.s3.read_parquet(path=path, dataset=dataset)
+        return wr.s3.read_parquet(path=path, dataset=dataset, columns=columns)
     except Exception:  # missing partition -> empty frame
         return pd.DataFrame()
 
@@ -98,7 +98,7 @@ def x_daily_metrics_by_date(posts_x):
     cols = ["date", "platform", "total_users", "posts_count"]
     if posts_x.empty:
         return pd.DataFrame(columns=cols)
-    df = posts_x.copy()
+    df = posts_x.drop_duplicates(subset="id").copy()  # silver appends per file
     df["date"] = pd.to_datetime(df["datetime"], utc=True).dt.strftime("%Y-%m-%d")
     grouped = df.groupby("date", as_index=False).agg(
         total_users=("author_username", "nunique"),
