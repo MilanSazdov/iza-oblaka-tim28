@@ -1,0 +1,1 @@
+# awswrangler + pg8000 are provided by the AWSSDKPandas Lambda layer.
