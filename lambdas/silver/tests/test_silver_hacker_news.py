@@ -53,7 +53,7 @@ def test_normalize_posts_users_relations(hn):
     # users sorted lexicographically, follower/verified null for HN
     assert list(users["username"]) == ["alice", "bob"]
     assert users["user_followers"].isna().all()
-    assert users["is_verified"].isna().all()
+    assert "is_verified" not in users.columns
 
     # relations only for the comment
     assert list(rel["child_id"]) == ["1"]

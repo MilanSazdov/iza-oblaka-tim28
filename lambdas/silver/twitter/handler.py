@@ -17,7 +17,7 @@ def normalize(raw):
     """Build posts / users dataframes from a raw Bitcoin-Tweets dataframe."""
     df = raw.copy()
     # Tolerate datasets that omit optional columns.
-    for col in ("user_name", "user_followers", "user_verified", "date", "text", "is_retweet"):
+    for col in ("user_name", "user_followers", "date", "text", "is_retweet"):
         if col not in df.columns:
             df[col] = None
 
@@ -46,24 +46,20 @@ def normalize(raw):
         posts = posts.drop_duplicates(subset="id").sort_values("datetime")
 
     followers = pd.to_numeric(df["user_followers"], errors="coerce")
-    verified = df["user_verified"].map(common.to_bool)
     udf = pd.DataFrame(
         {
             "username": df["user_name"].values,
             "user_followers": followers.values,
-            "is_verified": verified.values,
         }
     )
-    grouped = (
-        udf.groupby("username", as_index=False)
-        .agg(user_followers=("user_followers", "max"), is_verified=("is_verified", "max"))
+    grouped = udf.groupby("username", as_index=False).agg(
+        user_followers=("user_followers", "max")
     )
     users = pd.DataFrame(
         {
             "id": [common.user_id(common.PLATFORM_X, u) for u in grouped["username"]],
             "username": grouped["username"].values,
             "user_followers": grouped["user_followers"].astype("Int64").values,
-            "is_verified": grouped["is_verified"].astype("boolean").values,
         }
     ).sort_values("username")
 
@@ -71,7 +67,7 @@ def normalize(raw):
 
 
 # only the columns the silver schema needs (keeps the large CSV out of memory)
-_USECOLS = {"user_name", "user_followers", "user_verified", "date", "text", "is_retweet"}
+_USECOLS = {"user_name", "user_followers", "date", "text", "is_retweet"}
 
 
 def _read_csvs(wr):

@@ -112,11 +112,10 @@ def normalize(items):
                 "id": common.user_id(common.PLATFORM_HN, u),
                 "username": u,
                 "user_followers": pd.NA,
-                "is_verified": pd.NA,
             }
             for u in sorted(usernames)
         ],
-        columns=["id", "username", "user_followers", "is_verified"],
+        columns=["id", "username", "user_followers"],
     )
 
     relations_df = pd.DataFrame(

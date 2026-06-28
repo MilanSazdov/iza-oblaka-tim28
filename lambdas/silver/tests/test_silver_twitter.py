@@ -6,7 +6,6 @@ def test_normalize_dedup_union_sort(tw):
         {
             "user_name": ["bob", "alice", "alice"],
             "user_followers": [200, 100, 150],
-            "user_verified": ["False", "True", "True"],
             "date": [
                 "2023-03-02 00:00:00",
                 "2023-03-01 23:59:59",
@@ -29,10 +28,9 @@ def test_normalize_dedup_union_sort(tw):
     assert list(users["username"]) == ["alice", "bob"]
     alice = users[users["username"] == "alice"].iloc[0]
     assert alice["user_followers"] == 150
-    assert bool(alice["is_verified"]) is True
     bob = users[users["username"] == "bob"].iloc[0]
     assert bob["user_followers"] == 200
-    assert bool(bob["is_verified"]) is False
+    assert "is_verified" not in users.columns
 
 
 def test_normalize_tolerates_missing_columns(tw):
