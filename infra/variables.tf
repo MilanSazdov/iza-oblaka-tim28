@@ -48,6 +48,16 @@ variable "gold_twitter_zip_path" {
   default = "build/gold_twitter.zip"
 }
 
+variable "gold_loader_zip_path" {
+  type    = string
+  default = "build/gold_loader.zip"
+}
+
+variable "viz_instance_type" {
+  type    = string
+  default = "t3.medium"
+}
+
 # AWS-managed "AWS SDK for pandas" (awswrangler) layer for python3.11 in
 # eu-central-1. Confirm the latest version number for your account/region:
 # https://aws-sdk-pandas.readthedocs.io/en/stable/layers.html

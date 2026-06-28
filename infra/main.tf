@@ -5,6 +5,10 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.40"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.5"
+    }
   }
 }
 
@@ -52,6 +56,7 @@ module "notifications" {
 
   discord_webhook_url       = var.discord_webhook_url
   discord_notifier_zip_path = var.discord_notifier_zip_path
+  permissions_boundary_arn  = var.lambda_role_permissions_boundary_arn
 }
 
 module "eu_lambdas" {
@@ -105,4 +110,28 @@ module "eu_processing" {
   silver_twitter_zip_path     = var.silver_twitter_zip_path
   gold_hn_zip_path            = var.gold_hn_zip_path
   gold_twitter_zip_path       = var.gold_twitter_zip_path
+}
+
+module "eu_viz" {
+  source       = "./modules/eu-central-1/viz"
+  project_name = var.project_name
+  environment  = var.environment
+
+  depends_on = [module.global_iam]
+
+  vpc_id             = module.eu_vpc.vpc_id
+  private_subnet_ids = module.eu_vpc.private_subnet_ids
+  lambda_sg_id       = module.eu_vpc.lambda_sg_id
+
+  gold_bucket_name = module.global_s3.gold_bucket_name
+  kms_key_arn      = module.global_s3.kms_key_arn
+
+  alerts_sns_topic_arn  = module.notifications.sns_topic_arn
+  awswrangler_layer_arn = var.awswrangler_layer_arn
+
+  ec2_role_name        = module.global_iam.ec2_postgres_role_name
+  gold_loader_role_arn = module.global_iam.gold_loader_role_arn
+  gold_loader_zip_path = var.gold_loader_zip_path
+
+  instance_type = var.viz_instance_type
 }

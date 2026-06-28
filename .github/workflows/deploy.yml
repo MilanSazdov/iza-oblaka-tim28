@@ -44,6 +44,7 @@ jobs:
             lambdas/silver/twitter:silver_twitter
             lambdas/gold/hn:gold_hn
             lambdas/gold/twitter:gold_twitter
+            lambdas/gold/loader:gold_loader
           "
           for entry in $functions; do
             fn="${entry%%:*}"
