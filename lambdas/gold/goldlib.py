@@ -66,7 +66,7 @@ def karma_ranking(posts_hn, day, ascending):
         .groupby("author_username", as_index=False)["points"]
         .sum()
         .rename(columns={"author_username": "username", "points": "karma"})
-        .sort_values("karma", ascending=ascending)
+        .sort_values(["karma", "username"], ascending=[ascending, True])
         .head(TOP_N)
         .reset_index(drop=True)
     )
@@ -84,7 +84,7 @@ def top_posts(posts_hn, day, ptype):
     if "text" not in sub.columns:
         sub["text"] = None
     sub["points"] = pd.to_numeric(sub["points"], errors="coerce").fillna(0).astype("int64")
-    sub = sub.sort_values("points", ascending=False).head(TOP_N).reset_index(drop=True)
+    sub = sub.sort_values(["points", "id"], ascending=[False, True]).head(TOP_N).reset_index(drop=True)
     sub.insert(0, "date", day.isoformat())
     sub["rank"] = sub.index + 1
     return sub[cols]
@@ -114,7 +114,7 @@ def top_followers(users_x, day):
         return pd.DataFrame(columns=cols)
     sub = users_x.copy()
     sub["user_followers"] = pd.to_numeric(sub["user_followers"], errors="coerce").fillna(0)
-    sub = sub.sort_values("user_followers", ascending=False).head(TOP_N).reset_index(drop=True)
+    sub = sub.sort_values(["user_followers", "username"], ascending=[False, True]).head(TOP_N).reset_index(drop=True)
     sub["user_followers"] = sub["user_followers"].astype("int64")
     sub.insert(0, "date", day.isoformat())
     sub["rank"] = sub.index + 1
