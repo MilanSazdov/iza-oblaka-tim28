@@ -7,7 +7,9 @@ import uuid
 # Fixed namespace so ids are stable across runs.
 _NS = uuid.UUID("d3f5e8a2-1c4b-4f6a-9e2d-7b8c0a1f2e3d")
 
-_TAG_RE = re.compile(r"<[^>]+>")
+# require a tag name after '<' so bare comparisons in text (e.g. "5 < 10 > 3")
+# are preserved while real HTML tags are stripped
+_TAG_RE = re.compile(r"</?[a-zA-Z][^>]*>")
 _WS_RE = re.compile(r"\s+")
 
 PLATFORM_HN = "HackerNews"
@@ -15,11 +17,11 @@ PLATFORM_X = "X"
 
 
 def clean_text(value):
-    """Strip HTML tags, unescape entities and collapse whitespace."""
+    """Unescape entities, strip HTML tags, collapse whitespace."""
     if value is None:
         return None
-    text = _TAG_RE.sub(" ", str(value))
-    text = html.unescape(text)
+    text = html.unescape(str(value))
+    text = _TAG_RE.sub(" ", text)
     text = _WS_RE.sub(" ", text).strip()
     return text or None
 

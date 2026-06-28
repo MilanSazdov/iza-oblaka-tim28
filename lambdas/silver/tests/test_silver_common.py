@@ -8,6 +8,10 @@ def test_clean_text_strips_html_and_unescapes():
     assert common.clean_text("<i>a</i>   b") == "a b"
     assert common.clean_text(None) is None
     assert common.clean_text("<p></p>") is None
+    # bare comparisons in tweet text are preserved (not treated as tags)
+    assert common.clean_text("BTC at 5 < 10 > 3 today") == "BTC at 5 < 10 > 3 today"
+    # entity-encoded markup is still removed (unescape happens first)
+    assert common.clean_text("&lt;script&gt;x") == "x"
 
 
 def test_user_id_is_deterministic_and_platform_scoped():

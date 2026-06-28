@@ -133,6 +133,9 @@ def _write_dated(wr, df, table):
     if df.empty:
         return 0
     df = df.copy()
+    df = df[df["datetime"].notna()]  # never partition on a NaT date
+    if df.empty:
+        return 0
     df["platform"] = common.PLATFORM_HN
     df["year"], df["month"], df["day"] = common.partition_cols(df["datetime"])
     wr.s3.to_parquet(

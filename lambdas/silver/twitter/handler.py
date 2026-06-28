@@ -113,9 +113,10 @@ def _write_users(wr, users):
     merged = pd.concat([existing, users], ignore_index=True)
     if "platform" in merged.columns:
         merged = merged.drop(columns=["platform"])
-    # keep the largest follower count seen for each user
+    # keep the largest follower count seen for each user; na_position="first"
+    # ensures a real value (not NaN) survives drop_duplicates(keep="last")
     merged["user_followers"] = pd.to_numeric(merged["user_followers"], errors="coerce")
-    merged = merged.sort_values("user_followers").drop_duplicates(
+    merged = merged.sort_values("user_followers", na_position="first").drop_duplicates(
         subset="id", keep="last"
     )
     merged["user_followers"] = merged["user_followers"].astype("Int64")
