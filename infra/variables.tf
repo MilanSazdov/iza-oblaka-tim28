@@ -55,7 +55,7 @@ variable "gold_loader_zip_path" {
 
 variable "viz_instance_type" {
   type    = string
-  default = "t3.micro" # account is Free-Tier-only; 1 GB + swap (see user-data)
+  default = "c7i-flex.large" # free-tier eligible on this account, 4 GB for superset
 }
 
 # AWS-managed "AWS SDK for pandas" (awswrangler) layer for python3.11 in
