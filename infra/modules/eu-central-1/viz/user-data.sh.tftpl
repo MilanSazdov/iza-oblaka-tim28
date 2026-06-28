@@ -6,6 +6,15 @@ dnf update -y
 dnf install -y docker unzip
 systemctl enable --now docker
 
+# 4 GB swap so a 1 GB free-tier instance can run postgres + superset
+if [ ! -f /swapfile ]; then
+  dd if=/dev/zero of=/swapfile bs=1M count=4096
+  chmod 600 /swapfile
+  mkswap /swapfile
+  swapon /swapfile
+  echo '/swapfile none swap sw 0 0' >> /etc/fstab
+fi
+
 # AWS CLI v2 (not reliably packaged on AL2023)
 curl -sSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o /tmp/awscliv2.zip
 unzip -q /tmp/awscliv2.zip -d /tmp
@@ -55,7 +64,7 @@ services:
                superset db upgrade &&
                superset fab create-admin --username admin --firstname Admin --lastname User --email admin@example.com --password '$ADMINPASS' || true &&
                superset init &&
-               gunicorn -w 2 -t 120 -b 0.0.0.0:8088 'superset.app:create_app()'"
+               gunicorn -w 1 -t 300 -b 0.0.0.0:8088 'superset.app:create_app()'"
 
 volumes:
   pgdata:
