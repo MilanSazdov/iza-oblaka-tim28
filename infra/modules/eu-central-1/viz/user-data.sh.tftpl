@@ -1,0 +1,66 @@
+#!/bin/bash
+# no -x: secret values must not be traced into /var/log/cloud-init-output.log
+set -euo pipefail
+
+dnf update -y
+dnf install -y docker unzip
+systemctl enable --now docker
+
+# AWS CLI v2 (not reliably packaged on AL2023)
+curl -sSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o /tmp/awscliv2.zip
+unzip -q /tmp/awscliv2.zip -d /tmp
+/tmp/aws/install || /tmp/aws/install --update
+
+# docker compose plugin
+mkdir -p /usr/local/lib/docker/cli-plugins
+curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64 \
+  -o /usr/local/lib/docker/cli-plugins/docker-compose
+chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+
+REGION="${region}"
+PGPASS=$(aws ssm get-parameter --name "${pg_param}" --with-decryption --query Parameter.Value --output text --region "$REGION")
+ADMINPASS=$(aws ssm get-parameter --name "${admin_param}" --with-decryption --query Parameter.Value --output text --region "$REGION")
+SECRET=$(aws ssm get-parameter --name "${secret_param}" --with-decryption --query Parameter.Value --output text --region "$REGION")
+
+mkdir -p /opt/viz
+chmod 700 /opt/viz
+umask 077
+cat > /opt/viz/docker-compose.yml <<COMPOSE
+services:
+  postgres:
+    image: postgres:16
+    restart: always
+    environment:
+      POSTGRES_DB: ${pg_db}
+      POSTGRES_USER: ${pg_user}
+      POSTGRES_PASSWORD: $PGPASS
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  superset:
+    image: apache/superset:4.1.1
+    restart: always
+    depends_on:
+      - postgres
+    environment:
+      SUPERSET_SECRET_KEY: $SECRET
+    ports:
+      - "8088:8088"
+    volumes:
+      - supersethome:/app/superset_home
+    command: >
+      bash -c "pip install psycopg2-binary &&
+               superset db upgrade &&
+               superset fab create-admin --username admin --firstname Admin --lastname User --email admin@example.com --password '$ADMINPASS' || true &&
+               superset init &&
+               gunicorn -w 2 -t 120 -b 0.0.0.0:8088 'superset.app:create_app()'"
+
+volumes:
+  pgdata:
+  supersethome:
+COMPOSE
+
+cd /opt/viz
+docker compose up -d
