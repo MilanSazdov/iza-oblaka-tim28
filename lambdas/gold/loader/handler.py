@@ -30,13 +30,14 @@ def _pg_password():
 
 def lambda_handler(event, context):
     import awswrangler as wr
-    import pg8000.dbapi
+    import pg8000.native
 
-    con = pg8000.dbapi.connect(
+    # awswrangler.postgresql.to_sql requires a pg8000 *native* connection
+    con = pg8000.native.Connection(
+        user=PG_USER,
         host=PG_HOST,
         port=PG_PORT,
         database=PG_DB,
-        user=PG_USER,
         password=_pg_password(),
     )
     loaded = {}
@@ -59,7 +60,6 @@ def lambda_handler(event, context):
             )
             loaded[table] = len(df)
             log.info("loaded %s rows=%d", table, len(df))
-        con.commit()
     finally:
         con.close()
 
