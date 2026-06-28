@@ -17,8 +17,9 @@ data "aws_iam_policy_document" "notifier_assume" {
 }
 
 resource "aws_iam_role" "notifier" {
-  name               = "${local.prefix}-discord-notifier"
-  assume_role_policy = data.aws_iam_policy_document.notifier_assume.json
+  name                 = "${local.prefix}-discord-notifier"
+  assume_role_policy   = data.aws_iam_policy_document.notifier_assume.json
+  permissions_boundary = var.permissions_boundary_arn
 }
 
 resource "aws_iam_role_policy_attachment" "notifier_logs" {

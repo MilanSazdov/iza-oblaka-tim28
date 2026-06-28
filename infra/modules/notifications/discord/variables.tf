@@ -14,3 +14,8 @@ variable "discord_webhook_url" {
 variable "discord_notifier_zip_path" {
   type = string
 }
+
+variable "permissions_boundary_arn" {
+  type    = string
+  default = null
+}
