@@ -63,3 +63,23 @@ resource "aws_lambda_permission" "allow_sns" {
   principal     = "sns.amazonaws.com"
   source_arn    = aws_sns_topic.alerts.arn
 }
+
+# notifier can't alert on its own outage; alarm state is at least visible in CloudWatch
+resource "aws_cloudwatch_metric_alarm" "notifier_errors" {
+  alarm_name          = "${aws_lambda_function.notifier.function_name}-errors"
+  alarm_description   = "Discord notifier invocation errors (delivery failures)"
+  namespace           = "AWS/Lambda"
+  metric_name         = "Errors"
+  statistic           = "Sum"
+  period              = 60
+  evaluation_periods  = 1
+  threshold           = 0
+  comparison_operator = "GreaterThanThreshold"
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    FunctionName = aws_lambda_function.notifier.function_name
+  }
+
+  alarm_actions = [aws_sns_topic.alerts.arn]
+}

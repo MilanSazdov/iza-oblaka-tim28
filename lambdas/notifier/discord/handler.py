@@ -1,11 +1,13 @@
 import json
 import logging
 import os
+import time
 
 import requests
 
 
 WEBHOOK_URL = os.environ["DISCORD_WEBHOOK_URL"]
+_MAX_ATTEMPTS = 4  # retry transient Discord failures before giving up
 
 log = logging.getLogger()
 log.setLevel(logging.INFO)
@@ -40,12 +42,28 @@ def _format(record):
     return {"username": "aws-alerts", "content": f"**{title}**\n```\n{body}\n```"}
 
 
+def _post_with_retry(payload):
+    """POST to Discord, retrying transient failures; raise on final failure so SNS retries."""
+    for attempt in range(1, _MAX_ATTEMPTS + 1):
+        try:
+            r = requests.post(WEBHOOK_URL, json=payload, timeout=10)
+            if r.status_code == 429 or r.status_code >= 500:
+                raise requests.HTTPError(f"transient {r.status_code}")
+            r.raise_for_status()
+            return
+        except requests.RequestException as e:
+            if attempt == _MAX_ATTEMPTS:
+                log.error("discord delivery failed after %d attempts: %s", attempt, e)
+                raise
+            backoff = 2 ** (attempt - 1)
+            log.warning("discord post attempt %d failed (%s), retry in %ds", attempt, e, backoff)
+            time.sleep(backoff)
+
+
 def lambda_handler(event, context):
     sent = 0
     for record in event.get("Records", []):
-        payload = _format(record)
-        r = requests.post(WEBHOOK_URL, json=payload, timeout=10)
-        r.raise_for_status()
+        _post_with_retry(_format(record))
         sent += 1
     log.info("forwarded %d sns records to discord", sent)
     return {"forwarded": sent}

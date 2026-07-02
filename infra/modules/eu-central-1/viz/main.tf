@@ -123,6 +123,11 @@ resource "aws_instance" "viz" {
 
   tags = { Name = "${local.prefix}-viz" }
 
+  # don't stop/start the running box on template edits; applies on rebuild
+  lifecycle {
+    ignore_changes = [user_data]
+  }
+
   depends_on = [
     aws_ssm_parameter.pg_password,
     aws_ssm_parameter.superset_admin,
