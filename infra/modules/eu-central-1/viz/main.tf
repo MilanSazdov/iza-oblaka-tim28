@@ -123,9 +123,10 @@ resource "aws_instance" "viz" {
 
   tags = { Name = "${local.prefix}-viz" }
 
-  # don't stop/start the running box on template edits; applies on rebuild
+  # never replace the running box on a newer AMI / user_data edit; both apply
+  # only to a deliberate rebuild
   lifecycle {
-    ignore_changes = [user_data]
+    ignore_changes = [ami, user_data]
   }
 
   depends_on = [
