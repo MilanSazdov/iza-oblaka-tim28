@@ -51,6 +51,9 @@ def lambda_handler(event, context):
                 log.info("skip %s (no gold data)", table)
                 loaded[table] = 0
                 continue
+            # `date` is a gold partition value, so it reads back as a string and
+            # would land as TEXT; force it to a real DATE column for Superset.
+            dtype = {"date": "DATE"} if "date" in df.columns else None
             wr.postgresql.to_sql(
                 df=df,
                 con=con,
@@ -58,6 +61,7 @@ def lambda_handler(event, context):
                 schema="public",
                 mode="overwrite",
                 index=False,
+                dtype=dtype,
             )
             loaded[table] = len(df)
             log.info("loaded %s rows=%d", table, len(df))
